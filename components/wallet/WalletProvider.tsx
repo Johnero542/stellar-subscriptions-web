@@ -27,6 +27,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [installed, setInstalled] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountSwitched, setAccountSwitched] = useState(false);
   const addressRef = useRef<string | null>(null);
   addressRef.current = address;
 
@@ -66,7 +67,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const start = () => {
       stop ??= watchWallet(({ address: next }) => {
         if (!addressRef.current) return;
-        if (next && next !== addressRef.current) setAddress(next);
+        if (next && next !== addressRef.current) {
+          setAccountSwitched(true);
+          setAddress(next);
+        }
         void followWallet();
       });
     };
@@ -101,7 +105,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const disconnect = useCallback(() => {
     setAddress(null);
     setWalletNetwork(null);
+    setAccountSwitched(false);
     localStorage.removeItem(REMEMBER_KEY);
+  }, []);
+
+  const clearAccountSwitchWarning = useCallback(() => {
+    setAccountSwitched(false);
   }, []);
 
   const setNetwork = useCallback((next: Network) => {
@@ -133,12 +142,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       installed,
       connecting,
       error,
+      accountSwitched,
       connect,
       disconnect,
       setNetwork,
+      clearAccountSwitchWarning,
       writeCtx,
     }),
-    [address, network, walletNetwork, installed, connecting, error, connect, disconnect, setNetwork, writeCtx],
+    [address, network, walletNetwork, installed, connecting, error, accountSwitched, connect, disconnect, setNetwork, clearAccountSwitchWarning, writeCtx],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
